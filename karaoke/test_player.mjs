@@ -1,3 +1,4 @@
+import {rhythmLines, blockGeometry, compareHolds, HoldRecorder} from './web/rhythm-core.js';
 import test, {beforeEach} from 'node:test';
 import assert from 'node:assert/strict';
 import {Player} from './web/player.js';
@@ -1782,3 +1783,64 @@ for (const outcome of ['recovers', 'stays stuck', 'cancelled']) {
     } finally { p.clear(); for (const resolve of pending) resolve(); globalThis.fetch=fetchAudio; }
   });
 }
+
+
+const cue = {text:'短长', start:0, end:4, units:[
+  {text:'短',first:0,stop:1,start:1,end:1.2},
+  {text:'长',first:1,stop:2,start:1.5,end:3.5},
+]};
+
+test('upstream units retain absolute timestamps, gaps and a tenfold duration ratio', () => {
+  const original = structuredClone(cue), [line] = rhythmLines([cue]);
+  const short = blockGeometry(line.units[0], 0, 220), long = blockGeometry(line.units[1], 0, 220);
+  assert.ok(Math.abs(long.width / short.width - 10) < 1e-10);
+  assert.ok(Math.abs(long.left - short.left - short.width - 66) < 1e-10);
+  assert.equal(line.start, 1); assert.equal(line.end, 3.5);
+  assert.deepEqual(cue, original);
+  assert.notEqual(line.units[0], cue.units[0]);
+});
+
+test('missing, invalid and unordered units fail instead of inventing character timestamps', () => {
+  for (const cues of [[], [{text:'缺少时间',start:0,end:2}], [{...cue,units:[{text:'短',start:1,end:1}]}],
+    [{...cue,units:[{text:'短',start:NaN,end:2}]}], [{...cue,units:[...cue.units].reverse()}]]) {
+    assert.throws(() => rhythmLines(cues));
+  }
+  const [line] = rhythmLines([{...cue,units:[{text:'多个字',start:1,end:2,timing_source:'linear_fallback'}]}]);
+  assert.equal(line.estimated,true); assert.equal(line.units.length,1);
+});
+
+test('overlapping upstream tails retain their duration instead of being clipped to next onset', () => {
+  const [line] = rhythmLines([{text:'尾音',units:[{text:'尾',start:1,end:3},{text:'音',start:2,end:2.8}]}]);
+  assert.equal(line.end,3); assert.equal(blockGeometry(line.units[0],0,200).width,400);
+});
+
+test('key auto-repeat and duplicate pointer down do not split a held word', () => {
+  const recorder = new HoldRecorder();
+  assert.equal(recorder.down(1),true); assert.equal(recorder.down(1.1),false);
+  recorder.up(1.5); recorder.up(1.6);
+  assert.deepEqual(recorder.holds,[{start:1,end:1.5}]);
+  recorder.down(2); recorder.reset(); recorder.up(3);
+  assert.deepEqual(recorder.holds,[]); assert.equal(recorder.active,null);
+});
+
+test('duration feedback distinguishes long and short holds and reports missing and extra taps', () => {
+  const result = compareHolds(cue.units,[{start:1.05,end:1.45},{start:1.5,end:3},{start:5,end:5.2}]);
+  assert.ok(Math.abs(result.words[0].duration - .2) < 1e-9);
+  assert.equal(result.words[1].duration,-.5); assert.equal(result.extra,1);
+  const skipped = compareHolds(cue.units,[{start:1.5,end:3.5}]);
+  assert.equal(skipped.words[0].missed,true); assert.equal(skipped.words[1].missed,false);
+});
+
+test('one long hold cannot count as multiple words and out-of-window holds are extra', () => {
+  const units=[{text:'一',start:1,end:1.2},{text:'二',start:1.2,end:1.4}];
+  const result=compareHolds(units,[{start:1,end:1.4}]);
+  assert.equal(result.words.filter(w=>!w.missed).length,1);
+  assert.equal(compareHolds(units,[{start:0,end:1.4}]).extra,1);
+});
+
+
+test('a missed fast word does not steal the following accurately timed press', () => {
+  const result = compareHolds([{text:'一',start:1,end:1.2},{text:'二',start:1.2,end:1.4}], [{start:1.2,end:1.4}]);
+  assert.equal(result.words[0].missed,true);
+  assert.equal(result.words[1].onset,0);
+});

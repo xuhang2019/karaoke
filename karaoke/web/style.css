@@ -171,3 +171,9 @@ html{scroll-padding-top:calc(var(--header-height,80px) + 20px)}
 /* Lyric evidence stays visible below the title on narrow screens too. */
 .music-meta .lyric-status{display:inline-block;color:var(--muted);font-size:11px;line-height:18px;white-space:nowrap}
 .music-meta .lyric-status.has-lyrics{color:var(--green)}
+
+/* The practice page opens in this tab so the KTV player is released. */
+.navigation .rhythm-link{display:flex;align-items:center;justify-content:center;min-height:44px;color:var(--muted);text-decoration:none;font-size:13px}
+.navigation .rhythm-link:hover{color:var(--text)}
+@media(max-width:1100px){.navigation .rhythm-link{font-size:14px}}
+@media(max-width:480px){.navigation .rhythm-link{flex:1;font-size:14px}}

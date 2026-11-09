@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>逐字节奏练习</title><link rel="stylesheet" href="rhythm.css">
+<script type="module" src="rhythm.js"></script>
+</head>
+<body>
+<header><a href="/">← 返回点歌台</a><span>逐字节奏练习</span><button id="fullscreen">全屏</button></header>
+<main>
+<section class="source-panel" aria-label="选择歌曲">
+  <div><label for="songs">已对齐的歌曲</label><select id="songs"><option value="">正在读取曲库…</option></select></div>
+  <button id="refresh">刷新曲库</button><button id="demo">试用节奏示例</button>
+  <details><summary>导入本地音频和时间轴</summary><div class="imports">
+    <label>原曲 MP3 / WAV<input id="audio-file" type="file" accept="audio/*"></label>
+    <label>原项目 cues.json<input id="cue-file" type="file" accept=".json,application/json"></label>
+  </div><p>请选择同一录音的音频和逐字对齐结果。文件仅在本机浏览器读取。</p></details>
+</section>
+<p id="status" role="status">选择歌曲，或先试用示例。</p>
+<section class="practice" aria-label="逐句练习">
+  <div class="sentence-heading"><span id="counter">第 — 句</span><label>时间轴缩放 <select id="zoom"><option value="fit" selected>适应整句</option><option value="140">140 px / 秒</option><option value="220">220 px / 秒</option><option value="360">360 px / 秒</option></select></label></div>
+  <h1 id="lyric">把每个字的长短，按出来。</h1><p id="next-line">每个色块的长度就是这个字的时长，空白是停顿。</p>
+  <div class="legend"><span class="target-dot">原唱时长</span><span class="hold-dot">你的按压</span><span id="clock">0.00 s</span></div>
+  <div id="viewport" tabindex="0" aria-label="歌词时间轴，可横向滚动"><div id="timeline"><div id="blocks"></div><div id="holds"></div><div id="cursor" hidden></div></div></div>
+  <div class="controls"><button id="previous" disabled>← 上一句</button><button id="play" class="primary" disabled>播放这一句</button><button id="stop" disabled>停止</button><button id="next" disabled>下一句 →</button><label><input type="checkbox" id="loop"> 循环本句</label></div>
+  <button id="pad" disabled aria-pressed="false"><strong>按住空格</strong><span>字开始时按下，字结束时松开 · 也可长按这里</span></button>
+  <div id="results" aria-live="polite"></div>
+</section>
+<p class="footnote">按住的时长与色块长度对应。相邻的字即使没有停顿，也要松开再按一次。Enter 重练，← / → 换句。</p>
+</main>
+</body></html>
